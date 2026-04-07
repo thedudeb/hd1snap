@@ -53,14 +53,6 @@ function getBaseUrl(ctx?: any): string {
   );
 }
 
-function isInitialGet(ctx?: any): boolean {
-  try {
-    return (ctx?.request as Request | undefined)?.method === "GET";
-  } catch {
-    return true;
-  }
-}
-
 // ── Page builders ─────────────────────────────────────────────────────────────
 
 function buildSpectrumBlurb(
@@ -105,7 +97,6 @@ function buildMainPage(ctx?: any) {
   const line  = gate.lines[solar.line - 1];
   const sign  = zodiacSign(solar.longitude);
   const base  = getBaseUrl(ctx);
-  const firstLoad = isInitialGet(ctx);
 
   // Read ?expand=shadow|gift|siddhi to reveal an inline panel under the buttons
   let expand: "shadow" | "gift" | "siddhi" | null = null;
