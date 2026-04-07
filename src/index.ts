@@ -1,6 +1,12 @@
 import { registerSnapHandler } from "@farcaster/snap-hono";
 import { Hono } from "hono";
-import { getSolarPosition, getMoonPosition } from "./ephemeris.js";
+import {
+  getSolarPosition,
+  getMoonPosition,
+  nextTransitions,
+  SUN_DAILY_MOTION,
+  MOON_DAILY_MOTION,
+} from "./ephemeris.js";
 import { getGate, type Gate } from "./gates.js";
 import { getHexagramGlyph, getHexagramLineRows } from "./hexagrams.js";
 import { renderBodyGraph } from "./bodygraph.js";
@@ -14,6 +20,17 @@ function formatDate(date: Date): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 0) ms = 0;
+  const totalMinutes = Math.floor(ms / 60_000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0)  return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 function zodiacSign(longitude: number): string {
@@ -105,6 +122,15 @@ function buildMainPage(ctx?: any) {
   const lineRows = getHexagramLineRows(solar.gate);
   const bodygraphUrl = `${base}/bodygraph.svg?gate=${solar.gate}&line=${solar.line}`;
 
+  // Transition countdowns
+  const sunNext  = nextTransitions(solar.longitude, SUN_DAILY_MOTION);
+  const moonNext = nextTransitions(moon.longitude,  MOON_DAILY_MOTION);
+  const sunGate = getGate(sunNext.nextGate);
+  const moonGate = getGate(moonNext.nextGate);
+
+  const sunCountdown  = `☀ Sun enters Gate ${sunNext.nextGate} (${sunGate.name}) in ${formatDuration(sunNext.msUntilNextGate)} · Line ${sunNext.nextLine} in ${formatDuration(sunNext.msUntilNextLine)}`;
+  const moonCountdown = `🌙 Moon enters Gate ${moonNext.nextGate} (${moonGate.name}) in ${formatDuration(moonNext.msUntilNextGate)} · Line ${moonNext.nextLine} in ${formatDuration(moonNext.msUntilNextLine)}`;
+
   return {
     version: "1.0" as const,
     theme: { accent: "purple" as const },
@@ -120,12 +146,14 @@ function buildMainPage(ctx?: any) {
             "divider1",
             "bodygraph_image",
             "gate_item",
+            "sun_countdown",
             "divider2",
             "keywords_row",
             ...(expanded ? ["expand_panel", "expand_text", "btn_close_expand"] : []),
             "reflection_text",
             "divider3",
             "moon_item",
+            "moon_countdown",
             "divider4",
             "btn_detail",
             "btn_share",
@@ -158,6 +186,11 @@ function buildMainPage(ctx?: any) {
             title: `Gate ${solar.gate} · Line ${solar.line} — ${gate.name}`,
             description: `${line.name}: ${line.theme}`,
           },
+        },
+
+        sun_countdown: {
+          type: "text" as const,
+          props: { content: sunCountdown, size: "sm" as const },
         },
 
         divider2: { type: "separator" as const, props: {} },
@@ -230,8 +263,13 @@ function buildMainPage(ctx?: any) {
           type: "item" as const,
           props: {
             title: `${moon.emoji} ${moon.phaseName}`,
-            description: `Moon in Gate ${moon.gate} · Line ${moon.line}`,
+            description: `Moon in Gate ${moon.gate} (${getGate(moon.gate).name}) · Line ${moon.line}`,
           },
+        },
+
+        moon_countdown: {
+          type: "text" as const,
+          props: { content: moonCountdown, size: "sm" as const },
         },
 
         divider4: { type: "separator" as const, props: {} },

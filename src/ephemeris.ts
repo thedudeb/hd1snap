@@ -14,9 +14,14 @@ export interface MoonPosition {
   phase: number;     // 0–1 (0=new, 0.25=first quarter, 0.5=full, 0.75=last quarter)
   phaseName: string;
   emoji: string;
+  longitude: number;
   gate: number;
   line: number;
 }
+
+// Mean daily motion in degrees (ecliptic longitude).
+export const SUN_DAILY_MOTION  = 0.9856473598;
+export const MOON_DAILY_MOTION = 13.176396;
 
 // The 64 HD gates mapped sequentially around the solar wheel,
 // starting at ~302.5° ecliptic longitude (≈ Jan 3, Gate 41 Line 1).
@@ -111,10 +116,42 @@ export function getMoonPosition(date: Date): MoonPosition {
 
   // Approximate moon longitude: moon travels ~13.176° per day
   const MOON_START_LON = 218.316; // J2000 moon longitude
-  const MOON_DAILY_MOTION = 13.176396;
   const T_days = JD - 2451545.0;
   let moonLon = ((MOON_START_LON + MOON_DAILY_MOTION * T_days) % 360 + 360) % 360;
 
   const { gate, line } = longitudeToGateLine(moonLon);
-  return { phase, phaseName, emoji, gate, line };
+  return { phase, phaseName, emoji, longitude: moonLon, gate, line };
+}
+
+/**
+ * Compute the next gate and line boundary crossings for a body at the given
+ * longitude, travelling at `dailyMotion` degrees per day. Returns ms until
+ * each boundary plus the upcoming gate/line numbers.
+ */
+export function nextTransitions(longitude: number, dailyMotion: number) {
+  const normalized = ((longitude - HD_START_LONGITUDE) % 360 + 360) % 360;
+
+  const degreesIntoGate = normalized % GATE_SPAN;
+  const degreesToNextGate = GATE_SPAN - degreesIntoGate;
+
+  const degreesIntoLine = normalized % LINE_SPAN;
+  const degreesToNextLine = LINE_SPAN - degreesIntoLine;
+
+  const msPerDegree = 86_400_000 / dailyMotion;
+  const msUntilNextGate = degreesToNextGate * msPerDegree;
+  const msUntilNextLine = degreesToNextLine * msPerDegree;
+
+  // Figure out what the next gate/line actually are.
+  const currentGateIdx = Math.floor(normalized / GATE_SPAN);
+  const nextGate = GATE_SEQUENCE[(currentGateIdx + 1) % 64];
+
+  const currentLineInGate = Math.min(Math.floor(degreesIntoGate / LINE_SPAN) + 1, 6);
+  const nextLine = currentLineInGate === 6 ? 1 : currentLineInGate + 1;
+
+  return {
+    msUntilNextGate,
+    msUntilNextLine,
+    nextGate,
+    nextLine,
+  };
 }
