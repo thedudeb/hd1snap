@@ -23,21 +23,37 @@ function zodiacSign(longitude: number): string {
   return signs[Math.floor(((longitude % 360) + 360) % 360 / 30)];
 }
 
-function getBaseUrl(): string {
-  return (typeof globalThis !== "undefined" && (globalThis as any).process?.env?.SNAP_PUBLIC_BASE_URL)
-    ?? "http://localhost:3000";
+function getBaseUrl(ctx?: any): string {
+  // Prefer the request's own origin so we always POST back to the same deployment.
+  try {
+    const req = ctx?.request as Request | undefined;
+    if (req?.url) return new URL(req.url).origin;
+  } catch {}
+  return (
+    (typeof globalThis !== "undefined" && (globalThis as any).process?.env?.SNAP_PUBLIC_BASE_URL) ??
+    "http://localhost:3000"
+  );
+}
+
+function isInitialGet(ctx?: any): boolean {
+  try {
+    return (ctx?.request as Request | undefined)?.method === "GET";
+  } catch {
+    return true;
+  }
 }
 
 // ── Page builders ─────────────────────────────────────────────────────────────
 
-function buildMainPage() {
+function buildMainPage(ctx?: any) {
   const now   = new Date();
   const solar = getSolarPosition(now);
   const moon  = getMoonPosition(now);
   const gate  = getGate(solar.gate);
   const line  = gate.lines[solar.line - 1];
   const sign  = zodiacSign(solar.longitude);
-  const base  = getBaseUrl();
+  const base  = getBaseUrl(ctx);
+  const firstLoad = isInitialGet(ctx);
 
   const glyph = getHexagramGlyph(solar.gate);
   const lineRows = getHexagramLineRows(solar.gate);
@@ -45,7 +61,7 @@ function buildMainPage() {
   return {
     version: "1.0" as const,
     theme: { accent: "purple" as const },
-    effects: ["confetti" as const],
+    ...(firstLoad ? { effects: ["confetti" as const] } : {}),
     ui: {
       root: "page",
       elements: {
@@ -228,9 +244,9 @@ function buildMainPage() {
   };
 }
 
-function buildDetailPage(gateNumber: number, activeLine: number) {
+function buildDetailPage(gateNumber: number, activeLine: number, ctx?: any) {
   const gate: Gate = getGate(gateNumber);
-  const base = getBaseUrl();
+  const base = getBaseUrl(ctx);
 
   return {
     version: "1.0" as const,
@@ -379,11 +395,11 @@ const SPECTRUM_INFO = {
   },
 } as const;
 
-function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi") {
+function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi", ctx?: any) {
   const gate = getGate(gateNumber);
   const info = SPECTRUM_INFO[type];
   const term = gate[type];
-  const base = getBaseUrl();
+  const base = getBaseUrl(ctx);
 
   return {
     version: "1.0" as const,
@@ -428,14 +444,14 @@ function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi
 const app = new Hono();
 
 // Main transit page — GET and back-button POST both serve the same page
-registerSnapHandler(app, async () => buildMainPage(), { path: "/" });
+registerSnapHandler(app, async (ctx) => buildMainPage(ctx), { path: "/" });
 
 // Detail page
 registerSnapHandler(
   app,
-  async () => {
+  async (ctx) => {
     const solar = getSolarPosition(new Date());
-    return buildDetailPage(solar.gate, solar.line);
+    return buildDetailPage(solar.gate, solar.line, ctx);
   },
   { path: "/detail" }
 );
@@ -449,7 +465,7 @@ registerSnapHandler(
     const type: "shadow" | "gift" | "siddhi" =
       typeParam === "gift" || typeParam === "siddhi" ? typeParam : "shadow";
     const solar = getSolarPosition(new Date());
-    return buildSpectrumPage(solar.gate, type);
+    return buildSpectrumPage(solar.gate, type, ctx);
   },
   { path: "/spectrum" }
 );
