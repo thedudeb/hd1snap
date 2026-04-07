@@ -42,8 +42,10 @@ function buildFallbackHtml(title: string, description: string): string {
   // Compute today's transit for the landing page preview
   const now = new Date();
   const solar = getSolarPosition(now);
+  const earth = getEarthPosition(now);
   const moon = getMoonPosition(now);
   const gate = getGate(solar.gate);
+  const earthGate = getGate(earth.gate);
   const bodygraphUrl = `${PUBLIC_BASE}/bodygraph.svg?gate=${solar.gate}&line=${solar.line}`;
 
   return `<!DOCTYPE html>
