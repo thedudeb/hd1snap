@@ -2,6 +2,7 @@ import { registerSnapHandler } from "@farcaster/snap-hono";
 import { Hono } from "hono";
 import { getSolarPosition, getMoonPosition } from "./ephemeris.js";
 import { getGate, type Gate } from "./gates.js";
+import { getHexagramGlyph, getHexagramLineRows } from "./hexagrams.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -38,9 +39,13 @@ function buildMainPage() {
   const sign  = zodiacSign(solar.longitude);
   const base  = getBaseUrl();
 
+  const glyph = getHexagramGlyph(solar.gate);
+  const lineRows = getHexagramLineRows(solar.gate);
+
   return {
     version: "1.0" as const,
     theme: { accent: "purple" as const },
+    effects: ["confetti" as const],
     ui: {
       root: "page",
       elements: {
@@ -48,52 +53,109 @@ function buildMainPage() {
           type: "stack" as const,
           props: { gap: "md" as const },
           children: [
-            "header",
-            "dateline",
+            "header_item",
             "divider1",
-            "gate_heading",
-            "line_label",
+            "hex_glyph",
+            "hex_line6",
+            "hex_line5",
+            "hex_line4",
+            "hex_line3",
+            "hex_line2",
+            "hex_line1",
+            "gate_item",
             "divider2",
             "keywords_row",
             "reflection_text",
             "divider3",
-            "moon_row",
+            "moon_item",
             "divider4",
             "btn_detail",
             "btn_share",
           ],
         },
 
-        header: {
-          type: "text" as const,
+        header_item: {
+          type: "item" as const,
           props: {
-            content: "Human Design Daily Transit",
-            weight: "bold" as const,
-            size: "md" as const,
-          },
-        },
-        dateline: {
-          type: "text" as const,
-          props: {
-            content: `${formatDate(now)}  ·  Sun in ${sign}`,
-            size: "sm" as const,
+            title: "☀ Human Design Daily Transit",
+            description: `${formatDate(now)} · Sun in ${sign}`,
           },
         },
 
         divider1: { type: "separator" as const, props: {} },
 
-        gate_heading: {
+        // ✨ Big Unicode hexagram glyph — the authentic I Ching symbol
+        hex_glyph: {
           type: "text" as const,
           props: {
-            content: `Gate ${solar.gate} · Line ${solar.line}  —  ${gate.name}`,
+            content: glyph,
             weight: "bold" as const,
+            size: "lg" as const,
+            align: "center" as const,
           },
         },
-        line_label: {
+
+        // 6 line rows — heavy bar = yang, broken bar = yin, active line bold
+        hex_line6: {
           type: "text" as const,
           props: {
-            content: `${line.name}: ${line.theme}`,
+            content: `${lineRows[0].lineNumber === solar.line ? "→ " : "  "}${lineRows[0].text}`,
+            weight: lineRows[0].lineNumber === solar.line ? ("bold" as const) : undefined,
+            align: "center" as const,
             size: "sm" as const,
+          },
+        },
+        hex_line5: {
+          type: "text" as const,
+          props: {
+            content: `${lineRows[1].lineNumber === solar.line ? "→ " : "  "}${lineRows[1].text}`,
+            weight: lineRows[1].lineNumber === solar.line ? ("bold" as const) : undefined,
+            align: "center" as const,
+            size: "sm" as const,
+          },
+        },
+        hex_line4: {
+          type: "text" as const,
+          props: {
+            content: `${lineRows[2].lineNumber === solar.line ? "→ " : "  "}${lineRows[2].text}`,
+            weight: lineRows[2].lineNumber === solar.line ? ("bold" as const) : undefined,
+            align: "center" as const,
+            size: "sm" as const,
+          },
+        },
+        hex_line3: {
+          type: "text" as const,
+          props: {
+            content: `${lineRows[3].lineNumber === solar.line ? "→ " : "  "}${lineRows[3].text}`,
+            weight: lineRows[3].lineNumber === solar.line ? ("bold" as const) : undefined,
+            align: "center" as const,
+            size: "sm" as const,
+          },
+        },
+        hex_line2: {
+          type: "text" as const,
+          props: {
+            content: `${lineRows[4].lineNumber === solar.line ? "→ " : "  "}${lineRows[4].text}`,
+            weight: lineRows[4].lineNumber === solar.line ? ("bold" as const) : undefined,
+            align: "center" as const,
+            size: "sm" as const,
+          },
+        },
+        hex_line1: {
+          type: "text" as const,
+          props: {
+            content: `${lineRows[5].lineNumber === solar.line ? "→ " : "  "}${lineRows[5].text}`,
+            weight: lineRows[5].lineNumber === solar.line ? ("bold" as const) : undefined,
+            align: "center" as const,
+            size: "sm" as const,
+          },
+        },
+
+        gate_item: {
+          type: "item" as const,
+          props: {
+            title: `Gate ${solar.gate} · Line ${solar.line} — ${gate.name}`,
+            description: `${line.name}: ${line.theme}`,
           },
         },
 
@@ -124,20 +186,12 @@ function buildMainPage() {
 
         divider3: { type: "separator" as const, props: {} },
 
-        moon_row: {
-          type: "stack" as const,
-          props: { direction: "horizontal" as const, gap: "sm" as const },
-          children: ["moon_badge", "moon_text"],
-        },
-        moon_badge: {
-          type: "badge" as const,
-          props: { label: `${moon.emoji} ${moon.phaseName}` },
-        },
-        moon_text: {
-          type: "text" as const,
+        // Moon row — item with badge in the action slot
+        moon_item: {
+          type: "item" as const,
           props: {
-            content: `Moon in Gate ${moon.gate} · Line ${moon.line}`,
-            size: "sm" as const,
+            title: `${moon.emoji} ${moon.phaseName}`,
+            description: `Moon in Gate ${moon.gate} · Line ${moon.line}`,
           },
         },
 
