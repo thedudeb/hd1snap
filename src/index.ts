@@ -45,6 +45,24 @@ function isInitialGet(ctx?: any): boolean {
 
 // ── Page builders ─────────────────────────────────────────────────────────────
 
+const SPECTRUM_INFO = {
+  shadow: {
+    title: "🌑 The Shadow",
+    blurb:
+      "The unconscious, reactive frequency of a gate — the patterns of fear, blame, and contraction we fall into when we're running on autopilot. Recognizing the Shadow is the first step to transmuting it.",
+  },
+  gift: {
+    title: "🎁 The Gift",
+    blurb:
+      "The conscious, embodied frequency — what becomes available when the Shadow is met with awareness. The Gift is your unique creative contribution; the gene key in service to life.",
+  },
+  siddhi: {
+    title: "✨ The Siddhi",
+    blurb:
+      "The transcendent, fully realized frequency — pure essence beyond the personal self. The Siddhi is the highest expression of a gate, glimpsed in moments of grace and union.",
+  },
+} as const;
+
 function buildMainPage(ctx?: any) {
   const now   = new Date();
   const solar = getSolarPosition(now);
@@ -54,6 +72,17 @@ function buildMainPage(ctx?: any) {
   const sign  = zodiacSign(solar.longitude);
   const base  = getBaseUrl(ctx);
   const firstLoad = isInitialGet(ctx);
+
+  // Read ?expand=shadow|gift|siddhi to reveal an inline panel under the buttons
+  let expand: "shadow" | "gift" | "siddhi" | null = null;
+  try {
+    const url = new URL((ctx?.request as Request).url);
+    const e = url.searchParams.get("expand");
+    if (e === "shadow" || e === "gift" || e === "siddhi") expand = e;
+  } catch {}
+  const expanded = expand !== null;
+  const expandInfo = expand ? SPECTRUM_INFO[expand] : null;
+  const expandTerm = expand ? gate[expand] : "";
 
   const glyph = getHexagramGlyph(solar.gate);
   const lineRows = getHexagramLineRows(solar.gate);
@@ -81,6 +110,7 @@ function buildMainPage(ctx?: any) {
             "gate_item",
             "divider2",
             "keywords_row",
+            ...(expanded ? ["expand_panel", "expand_text", "btn_close_expand"] : []),
             "reflection_text",
             "divider3",
             "moon_item",
@@ -184,19 +214,49 @@ function buildMainPage(ctx?: any) {
         },
         btn_shadow: {
           type: "button" as const,
-          props: { label: `🌑 Shadow · ${gate.shadow}`, variant: "secondary" as const },
-          on: { press: { action: "submit" as const, params: { target: `${base}/spectrum?type=shadow` } } },
+          props: {
+            label: `🌑 Shadow · ${gate.shadow}`,
+            variant: (expand === "shadow" ? "primary" as const : "secondary" as const),
+          },
+          on: { press: { action: "submit" as const, params: { target: `${base}/?expand=${expand === "shadow" ? "" : "shadow"}` } } },
         },
         btn_gift: {
           type: "button" as const,
-          props: { label: `🎁 Gift · ${gate.gift}`, variant: "secondary" as const },
-          on: { press: { action: "submit" as const, params: { target: `${base}/spectrum?type=gift` } } },
+          props: {
+            label: `🎁 Gift · ${gate.gift}`,
+            variant: (expand === "gift" ? "primary" as const : "secondary" as const),
+          },
+          on: { press: { action: "submit" as const, params: { target: `${base}/?expand=${expand === "gift" ? "" : "gift"}` } } },
         },
         btn_siddhi: {
           type: "button" as const,
-          props: { label: `✨ Siddhi · ${gate.siddhi}`, variant: "secondary" as const },
-          on: { press: { action: "submit" as const, params: { target: `${base}/spectrum?type=siddhi` } } },
+          props: {
+            label: `✨ Siddhi · ${gate.siddhi}`,
+            variant: (expand === "siddhi" ? "primary" as const : "secondary" as const),
+          },
+          on: { press: { action: "submit" as const, params: { target: `${base}/?expand=${expand === "siddhi" ? "" : "siddhi"}` } } },
         },
+
+        ...(expanded
+          ? {
+              expand_panel: {
+                type: "item" as const,
+                props: {
+                  title: `${expandInfo!.title} — ${expandTerm}`,
+                  description: `Gate ${solar.gate} · ${gate.name}`,
+                },
+              },
+              expand_text: {
+                type: "text" as const,
+                props: { content: expandInfo!.blurb, size: "sm" as const },
+              },
+              btn_close_expand: {
+                type: "button" as const,
+                props: { label: "Close", variant: "secondary" as const },
+                on: { press: { action: "submit" as const, params: { target: `${base}/` } } },
+              },
+            }
+          : {}),
 
         reflection_text: {
           type: "text" as const,
@@ -376,24 +436,6 @@ function buildDetailPage(gateNumber: number, activeLine: number, ctx?: any) {
     },
   };
 }
-
-const SPECTRUM_INFO = {
-  shadow: {
-    title: "🌑 The Shadow",
-    blurb:
-      "The unconscious, reactive frequency of a gate — the patterns of fear, blame, and contraction we fall into when we're running on autopilot. Recognizing the Shadow is the first step to transmuting it.",
-  },
-  gift: {
-    title: "🎁 The Gift",
-    blurb:
-      "The conscious, embodied frequency — what becomes available when the Shadow is met with awareness. The Gift is your unique creative contribution; the gene key in service to life.",
-  },
-  siddhi: {
-    title: "✨ The Siddhi",
-    blurb:
-      "The transcendent, fully realized frequency — pure essence beyond the personal self. The Siddhi is the highest expression of a gate, glimpsed in moments of grace and union.",
-  },
-} as const;
 
 function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi", ctx?: any) {
   const gate = getGate(gateNumber);
