@@ -61,8 +61,40 @@ function shapePath(c: { shape: string; cx: number; cy: number; size: number }) {
   return `M ${cx - h} ${cy - h} L ${cx + h} ${cy - h} L ${cx + h} ${cy + h} L ${cx - h} ${cy + h} Z`;
 }
 
+// Adjacency: which center pairs have at least one channel between them.
+const CHANNELS: Array<[Center, Center]> = [
+  ["head", "ajna"],
+  ["ajna", "throat"],
+  ["throat", "g"],
+  ["throat", "heart"],
+  ["throat", "spleen"],
+  ["throat", "solar"],
+  ["throat", "sacral"],
+  ["g", "heart"],
+  ["g", "sacral"],
+  ["g", "spleen"],
+  ["heart", "spleen"],
+  ["heart", "solar"],
+  ["spleen", "sacral"],
+  ["spleen", "root"],
+  ["sacral", "solar"],
+  ["sacral", "root"],
+  ["solar", "root"],
+];
+
 export function renderBodyGraph(activeGate: number, activeLine: number): string {
   const activeCenter = GATE_TO_CENTER[activeGate] ?? "g";
+
+  // Channel lines drawn first so the centers sit on top of them.
+  const channelLines = CHANNELS.map(([a, b]) => {
+    const A = CENTER_GEOM[a];
+    const B = CENTER_GEOM[b];
+    const isActiveChan = a === activeCenter || b === activeCenter;
+    const stroke = isActiveChan ? "#a78bfa" : "#2a2a45";
+    const sw = isActiveChan ? 2 : 1.2;
+    const op = isActiveChan ? 0.85 : 0.6;
+    return `<line x1="${A.cx}" y1="${A.cy}" x2="${B.cx}" y2="${B.cy}" stroke="${stroke}" stroke-width="${sw}" opacity="${op}" stroke-linecap="round" />`;
+  }).join("\n  ");
 
   const centers = (Object.keys(CENTER_GEOM) as Center[]).map((key) => {
     const geom = CENTER_GEOM[key];
@@ -107,6 +139,7 @@ export function renderBodyGraph(activeGate: number, activeLine: number): string 
     </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bgGrad)" />
+  ${channelLines}
   ${centers}
   ${gateLabel}
 </svg>`;
