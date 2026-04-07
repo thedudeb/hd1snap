@@ -322,11 +322,3 @@ registerSnapHandler(
 );
 
 export default app;
-
-// Local dev server
-if (process.env.NODE_ENV !== "production") {
-  const { serve } = await import("@hono/node-server");
-  serve({ fetch: app.fetch, port: 3000 }, () => {
-    console.log("HD Transit snap running on http://localhost:3000");
-  });
-}
