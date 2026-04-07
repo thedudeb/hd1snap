@@ -90,6 +90,16 @@ export function getSolarPosition(date: Date): SolarPosition {
 }
 
 /**
+ * Earth is always exactly 180° opposite the Sun.
+ * Returns the HD gate + line of the Earth for a given date.
+ */
+export function getEarthPosition(date: Date): { gate: number; line: number } {
+  const sunLon = getSolarLongitude(date);
+  const earthLon = (sunLon + 180) % 360;
+  return longitudeToGateLine(earthLon);
+}
+
+/**
  * Approximate lunar phase and position.
  */
 export function getMoonPosition(date: Date): MoonPosition {

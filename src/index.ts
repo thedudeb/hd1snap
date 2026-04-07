@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import {
   getSolarPosition,
   getMoonPosition,
+  getEarthPosition,
   nextTransitions,
   SUN_DAILY_MOTION,
   MOON_DAILY_MOTION,
@@ -144,7 +145,7 @@ posthog.capture('landing_page_viewed',{gate:${solar.gate},gate_name:'${gate.name
         <span class="pill pill-gift">🎁 ${gate.gift}</span>
         <span class="pill pill-siddhi">✨ ${gate.siddhi}</span>
       </div>
-      <div class="moon-row">${moon.emoji} Moon in Gate ${moon.gate} · ${moon.phaseName}</div>
+      <div class="moon-row">⊕ Earth in Gate ${earth.gate} · ${earthGate.name} &nbsp;|&nbsp; ${moon.emoji} Moon in Gate ${moon.gate} · ${moon.phaseName}</div>
     </div>
   </div>
 
@@ -269,8 +270,10 @@ const SPECTRUM_INFO = {
 function buildMainPage(ctx?: any) {
   const now   = new Date();
   const solar = getSolarPosition(now);
+  const earth = getEarthPosition(now);
   const moon  = getMoonPosition(now);
   const gate  = getGate(solar.gate);
+  const earthGate = getGate(earth.gate);
   const line  = gate.lines[solar.line - 1];
   const sign  = zodiacSign(solar.longitude);
   const base  = getBaseUrl(ctx);
@@ -313,6 +316,7 @@ function buildMainPage(ctx?: any) {
             "divider1",
             "bodygraph_image",
             "gate_item",
+            "earth_item",
             "sun_countdown",
             "divider2",
             "keywords_row",
@@ -350,8 +354,16 @@ function buildMainPage(ctx?: any) {
         gate_item: {
           type: "item" as const,
           props: {
-            title: `Gate ${solar.gate} · Line ${solar.line} — ${gate.name}`,
+            title: `☀ Gate ${solar.gate} · Line ${solar.line} — ${gate.name}`,
             description: `${line.name}: ${line.theme}`,
+          },
+        },
+
+        earth_item: {
+          type: "item" as const,
+          props: {
+            title: `⊕ Gate ${earth.gate} · Line ${earth.line} — ${earthGate.name}`,
+            description: `${earthGate.keyword} · Grounding: ${earthGate.shadow} → ${earthGate.gift}`,
           },
         },
 
@@ -458,7 +470,7 @@ function buildMainPage(ctx?: any) {
             press: {
               action: "compose_cast" as const,
               params: {
-                text: `Gate ${solar.gate} · Line ${solar.line} — ${gate.name}\n\n"${gate.reflection}"\n\nCheck today's HD transit:`,
+                text: `☀ Gate ${solar.gate} · Line ${solar.line} — ${gate.name}\n⊕ Earth in Gate ${earth.gate} · ${earthGate.name}\n\n"${gate.reflection}"\n\nCheck today's HD transit:`,
                 embeds: [`${base}/`],
               },
             },
