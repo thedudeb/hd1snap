@@ -1,7 +1,7 @@
 import { registerSnapHandler } from "@farcaster/snap-hono";
 import { Hono } from "hono";
-import { getSolarPosition, getMoonPosition } from "./ephemeris";
-import { getGate, Gate } from "./gates";
+import { getSolarPosition, getMoonPosition } from "./ephemeris.js";
+import { getGate, type Gate } from "./gates.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
