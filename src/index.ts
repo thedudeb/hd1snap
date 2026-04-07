@@ -685,14 +685,32 @@ function fidFromCtx(ctx: any): number | undefined {
 // Browser requests (Accept: text/html) get the dynamic landing page —
 // computed per-request so today's gate is always live. Snap clients
 // (Accept: application/octet-stream) fall through to snap-hono below.
+// The Link header with rel="alternate" type="application/vnd.farcaster.snap+json"
+// is what tells Farcaster to render the URL as an interactive snap in the feed
+// rather than a plain image preview. snap-hono adds this automatically on its
+// own fallback responses — we must add it manually when serving our landing page.
+const SNAP_MEDIA_TYPE = "application/vnd.farcaster.snap+json";
+function snapLinkHeader(path: string): string {
+  return [
+    `<${path}>; rel="alternate"; type="${SNAP_MEDIA_TYPE}"`,
+    `<${path}>; rel="alternate"; type="text/html"`,
+  ].join(", ");
+}
+
 app.use("/", async (c, next) => {
   const accept = c.req.header("Accept") ?? "";
-  // Only serve the landing page to plain browser requests.
-  // Snap clients (emulator + Farcaster app) include the snap content-type
-  // in their Accept header — let those fall through to snap-hono.
+  // Only intercept plain browser requests — snap clients include the snap
+  // media type in Accept so they fall through to snap-hono below.
   const isSnapClient = accept.includes("application/vnd.farcaster.snap");
-  if (c.req.method === "GET" && accept.includes("text/html") && !isSnapClient) {
-    return c.html(buildFallbackHtml(APP_NAME, APP_DESC));
+  if (c.req.method === "GET" && !isSnapClient) {
+    return new Response(buildFallbackHtml(APP_NAME, APP_DESC), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Vary": "Accept",
+        "Link": snapLinkHeader("/"),
+      },
+    });
   }
   return next();
 });
