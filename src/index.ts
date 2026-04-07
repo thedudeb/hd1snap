@@ -131,7 +131,7 @@ function buildMainPage(ctx?: any) {
           type: "image" as const,
           props: {
             url: bodygraphUrl,
-            aspect: "9:16" as const,
+            aspect: "1:1" as const,
             alt: `Human Design BodyGraph showing active gate ${solar.gate}`,
           },
         },

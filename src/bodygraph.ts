@@ -35,18 +35,17 @@ const CENTER_LABELS: Record<Center, string> = {
   root: "Root",
 };
 
-// Layout: 400 wide × 600 tall
-// Centers positioned in classic HD bodygraph orientation.
+// Layout: 360 × 400 viewBox, compact + non-overlapping.
 const CENTER_GEOM: Record<Center, { shape: "triangle-up" | "triangle-down" | "square"; cx: number; cy: number; size: number }> = {
-  head:   { shape: "triangle-down", cx: 200, cy: 60,  size: 70 },
-  ajna:   { shape: "triangle-up",   cx: 200, cy: 145, size: 70 },
-  throat: { shape: "square",        cx: 200, cy: 230, size: 70 },
-  g:      { shape: "square",        cx: 200, cy: 320, size: 70 }, // rotated 45°
-  heart:  { shape: "triangle-down", cx: 290, cy: 320, size: 60 },
-  spleen: { shape: "triangle-up",   cx: 70,  cy: 410, size: 60 },
-  sacral: { shape: "square",        cx: 200, cy: 420, size: 70 },
-  solar:  { shape: "triangle-up",   cx: 330, cy: 420, size: 60 },
-  root:   { shape: "square",        cx: 200, cy: 520, size: 70 },
+  head:   { shape: "triangle-down", cx: 180, cy: 32,  size: 26 },
+  ajna:   { shape: "triangle-up",   cx: 180, cy: 82,  size: 26 },
+  throat: { shape: "square",        cx: 180, cy: 132, size: 24 },
+  g:      { shape: "square",        cx: 180, cy: 195, size: 22 }, // rotated 45° → diamond
+  heart:  { shape: "triangle-down", cx: 245, cy: 195, size: 22 },
+  spleen: { shape: "triangle-up",   cx: 70,  cy: 250, size: 22 },
+  sacral: { shape: "square",        cx: 180, cy: 258, size: 24 },
+  solar:  { shape: "triangle-up",   cx: 290, cy: 250, size: 22 },
+  root:   { shape: "square",        cx: 180, cy: 325, size: 24 },
 };
 
 function shapePath(c: { shape: string; cx: number; cy: number; size: number }) {
@@ -80,12 +79,12 @@ export function renderBodyGraph(activeGate: number, activeLine: number): string 
       shapeEl = `<path d="${shapePath(geom)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" />`;
     }
 
-    const label = `<text x="${geom.cx}" y="${geom.cy + 5}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="${isActive ? "#ffffff" : "#6b6b8a"}">${CENTER_LABELS[key]}</text>`;
+    const label = `<text x="${geom.cx}" y="${geom.cy + 3}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="${isActive ? "#ffffff" : "#6b6b8a"}">${CENTER_LABELS[key]}</text>`;
 
     // Pulse ring on active center
     const pulse = isActive
-      ? `<circle cx="${geom.cx}" cy="${geom.cy}" r="${geom.size + 4}" fill="none" stroke="#a78bfa" stroke-width="2" opacity="0.6">
-           <animate attributeName="r" from="${geom.size + 4}" to="${geom.size + 28}" dur="2.2s" repeatCount="indefinite" />
+      ? `<circle cx="${geom.cx}" cy="${geom.cy}" r="${geom.size + 2}" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.6">
+           <animate attributeName="r" from="${geom.size + 2}" to="${geom.size + 14}" dur="2.2s" repeatCount="indefinite" />
            <animate attributeName="opacity" from="0.7" to="0" dur="2.2s" repeatCount="indefinite" />
          </circle>`
       : "";
@@ -94,9 +93,9 @@ export function renderBodyGraph(activeGate: number, activeLine: number): string 
   }).join("\n");
 
   // Active gate label below the bodygraph
-  const gateLabel = `<text x="200" y="595" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#a78bfa">Gate ${activeGate} · Line ${activeLine}</text>`;
+  const gateLabel = `<text x="180" y="380" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#a78bfa">Gate ${activeGate} · Line ${activeLine}</text>`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 620" width="100%" height="100%">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 400" width="100%" height="100%">
   <defs>
     <radialGradient id="activeGrad" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.9" />
@@ -107,7 +106,7 @@ export function renderBodyGraph(activeGate: number, activeLine: number): string 
       <stop offset="100%" stop-color="#0a0a1a" />
     </radialGradient>
   </defs>
-  <rect width="400" height="620" fill="url(#bgGrad)" />
+  <rect width="360" height="400" fill="url(#bgGrad)" />
   ${centers}
   ${gateLabel}
 </svg>`;
