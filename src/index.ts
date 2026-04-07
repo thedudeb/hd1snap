@@ -309,7 +309,7 @@ function buildDetailPage(gateNumber: number, activeLine: number) {
 const app = new Hono();
 
 // Main transit page — GET and back-button POST both serve the same page
-registerSnapHandler(app, async () => buildMainPage(), { path: "/" });
+registerSnapHandler(app, async () => buildMainPage(), { path: "/", og: false });
 
 // Detail page
 registerSnapHandler(
@@ -318,7 +318,7 @@ registerSnapHandler(
     const solar = getSolarPosition(new Date());
     return buildDetailPage(solar.gate, solar.line);
   },
-  { path: "/detail" }
+  { path: "/detail", og: false }
 );
 
 export default app;
