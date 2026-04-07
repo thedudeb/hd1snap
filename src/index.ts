@@ -363,7 +363,7 @@ function buildDetailPage(gateNumber: number, activeLine: number) {
 const app = new Hono();
 
 // Main transit page — GET and back-button POST both serve the same page
-registerSnapHandler(app, async () => buildMainPage(), { path: "/", og: false });
+registerSnapHandler(app, async () => buildMainPage(), { path: "/" });
 
 // Detail page
 registerSnapHandler(
@@ -372,7 +372,16 @@ registerSnapHandler(
     const solar = getSolarPosition(new Date());
     return buildDetailPage(solar.gate, solar.line);
   },
-  { path: "/detail", og: false }
+  { path: "/detail" }
 );
 
 export default app;
+
+// Local dev server — only when explicitly run via `npm run dev`
+if (process.env.SNAP_LOCAL_DEV === "1") {
+  const { serve } = await import("@hono/node-server");
+  const port = Number(process.env.PORT ?? 3000);
+  serve({ fetch: app.fetch, port }, () => {
+    console.log(`HD Transit snap → http://localhost:${port}`);
+  });
+}

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "SNAP_LOCAL_DEV=1 SKIP_JFS_VERIFICATION=1 tsx watch src/index.ts",
     "build": "tsc --noEmit",
     "deploy": "vercel --prod"
   },
