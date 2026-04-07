@@ -687,7 +687,11 @@ function fidFromCtx(ctx: any): number | undefined {
 // (Accept: application/octet-stream) fall through to snap-hono below.
 app.use("/", async (c, next) => {
   const accept = c.req.header("Accept") ?? "";
-  if (c.req.method === "GET" && accept.includes("text/html")) {
+  // Only serve the landing page to plain browser requests.
+  // Snap clients (emulator + Farcaster app) include the snap content-type
+  // in their Accept header — let those fall through to snap-hono.
+  const isSnapClient = accept.includes("application/vnd.farcaster.snap");
+  if (c.req.method === "GET" && accept.includes("text/html") && !isSnapClient) {
     return c.html(buildFallbackHtml(APP_NAME, APP_DESC));
   }
   return next();
