@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { getSolarPosition, getMoonPosition } from "./ephemeris.js";
 import { getGate, type Gate } from "./gates.js";
 import { getHexagramGlyph, getHexagramLineRows } from "./hexagrams.js";
+import { renderBodyGraph } from "./bodygraph.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,6 +87,7 @@ function buildMainPage(ctx?: any) {
 
   const glyph = getHexagramGlyph(solar.gate);
   const lineRows = getHexagramLineRows(solar.gate);
+  const bodygraphUrl = `${base}/bodygraph.svg?gate=${solar.gate}&line=${solar.line}`;
 
   return {
     version: "1.0" as const,
@@ -100,13 +102,7 @@ function buildMainPage(ctx?: any) {
           children: [
             "header_item",
             "divider1",
-            "hex_glyph",
-            "hex_line6",
-            "hex_line5",
-            "hex_line4",
-            "hex_line3",
-            "hex_line2",
-            "hex_line1",
+            "bodygraph_image",
             "gate_item",
             "divider2",
             "keywords_row",
@@ -130,70 +126,13 @@ function buildMainPage(ctx?: any) {
 
         divider1: { type: "separator" as const, props: {} },
 
-        // ✨ Big Unicode hexagram glyph — the authentic I Ching symbol
-        hex_glyph: {
-          type: "text" as const,
+        // 🌌 Animated HD BodyGraph — pulses today's active center
+        bodygraph_image: {
+          type: "image" as const,
           props: {
-            content: glyph,
-            weight: "bold" as const,
-            size: "lg" as const,
-            align: "center" as const,
-          },
-        },
-
-        // 6 line rows — heavy bar = yang, broken bar = yin, active line bold
-        hex_line6: {
-          type: "text" as const,
-          props: {
-            content: `${lineRows[0].lineNumber === solar.line ? "→ " : "  "}${lineRows[0].text}`,
-            weight: lineRows[0].lineNumber === solar.line ? ("bold" as const) : undefined,
-            align: "center" as const,
-            size: "sm" as const,
-          },
-        },
-        hex_line5: {
-          type: "text" as const,
-          props: {
-            content: `${lineRows[1].lineNumber === solar.line ? "→ " : "  "}${lineRows[1].text}`,
-            weight: lineRows[1].lineNumber === solar.line ? ("bold" as const) : undefined,
-            align: "center" as const,
-            size: "sm" as const,
-          },
-        },
-        hex_line4: {
-          type: "text" as const,
-          props: {
-            content: `${lineRows[2].lineNumber === solar.line ? "→ " : "  "}${lineRows[2].text}`,
-            weight: lineRows[2].lineNumber === solar.line ? ("bold" as const) : undefined,
-            align: "center" as const,
-            size: "sm" as const,
-          },
-        },
-        hex_line3: {
-          type: "text" as const,
-          props: {
-            content: `${lineRows[3].lineNumber === solar.line ? "→ " : "  "}${lineRows[3].text}`,
-            weight: lineRows[3].lineNumber === solar.line ? ("bold" as const) : undefined,
-            align: "center" as const,
-            size: "sm" as const,
-          },
-        },
-        hex_line2: {
-          type: "text" as const,
-          props: {
-            content: `${lineRows[4].lineNumber === solar.line ? "→ " : "  "}${lineRows[4].text}`,
-            weight: lineRows[4].lineNumber === solar.line ? ("bold" as const) : undefined,
-            align: "center" as const,
-            size: "sm" as const,
-          },
-        },
-        hex_line1: {
-          type: "text" as const,
-          props: {
-            content: `${lineRows[5].lineNumber === solar.line ? "→ " : "  "}${lineRows[5].text}`,
-            weight: lineRows[5].lineNumber === solar.line ? ("bold" as const) : undefined,
-            align: "center" as const,
-            size: "sm" as const,
+            url: bodygraphUrl,
+            aspect: "9:16" as const,
+            alt: `Human Design BodyGraph showing active gate ${solar.gate}`,
           },
         },
 
@@ -484,6 +423,22 @@ function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi
 // ── App + routes ──────────────────────────────────────────────────────────────
 
 const app = new Hono();
+
+// Serve the animated bodygraph SVG
+app.get("/bodygraph.svg", (c) => {
+  const gate = Number(c.req.query("gate") ?? "1");
+  const line = Number(c.req.query("line") ?? "1");
+  const svg = renderBodyGraph(
+    Number.isFinite(gate) && gate >= 1 && gate <= 64 ? gate : 1,
+    Number.isFinite(line) && line >= 1 && line <= 6 ? line : 1,
+  );
+  return new Response(svg, {
+    headers: {
+      "content-type": "image/svg+xml; charset=utf-8",
+      "cache-control": "public, max-age=300, s-maxage=3600",
+    },
+  });
+});
 
 // Main transit page — GET and back-button POST both serve the same page
 registerSnapHandler(app, async (ctx) => buildMainPage(ctx), { path: "/" });
