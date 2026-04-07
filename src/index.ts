@@ -163,20 +163,23 @@ function buildMainPage() {
 
         keywords_row: {
           type: "stack" as const,
-          props: { direction: "horizontal" as const, gap: "sm" as const },
-          children: ["badge_shadow", "badge_gift", "badge_siddhi"],
+          props: { direction: "vertical" as const, gap: "sm" as const },
+          children: ["btn_shadow", "btn_gift", "btn_siddhi"],
         },
-        badge_shadow: {
-          type: "badge" as const,
-          props: { label: `Shadow: ${gate.shadow}`, variant: "outline" as const },
+        btn_shadow: {
+          type: "button" as const,
+          props: { label: `🌑 Shadow · ${gate.shadow}`, variant: "secondary" as const },
+          on: { press: { action: "submit" as const, params: { target: `${base}/spectrum?type=shadow` } } },
         },
-        badge_gift: {
-          type: "badge" as const,
-          props: { label: `Gift: ${gate.gift}` },
+        btn_gift: {
+          type: "button" as const,
+          props: { label: `🎁 Gift · ${gate.gift}`, variant: "secondary" as const },
+          on: { press: { action: "submit" as const, params: { target: `${base}/spectrum?type=gift` } } },
         },
-        badge_siddhi: {
-          type: "badge" as const,
-          props: { label: `Siddhi: ${gate.siddhi}`, variant: "outline" as const },
+        btn_siddhi: {
+          type: "button" as const,
+          props: { label: `✨ Siddhi · ${gate.siddhi}`, variant: "secondary" as const },
+          on: { press: { action: "submit" as const, params: { target: `${base}/spectrum?type=siddhi` } } },
         },
 
         reflection_text: {
@@ -358,6 +361,68 @@ function buildDetailPage(gateNumber: number, activeLine: number) {
   };
 }
 
+const SPECTRUM_INFO = {
+  shadow: {
+    title: "🌑 The Shadow",
+    blurb:
+      "The unconscious, reactive frequency of a gate — the patterns of fear, blame, and contraction we fall into when we're running on autopilot. Recognizing the Shadow is the first step to transmuting it.",
+  },
+  gift: {
+    title: "🎁 The Gift",
+    blurb:
+      "The conscious, embodied frequency — what becomes available when the Shadow is met with awareness. The Gift is your unique creative contribution; the gene key in service to life.",
+  },
+  siddhi: {
+    title: "✨ The Siddhi",
+    blurb:
+      "The transcendent, fully realized frequency — pure essence beyond the personal self. The Siddhi is the highest expression of a gate, glimpsed in moments of grace and union.",
+  },
+} as const;
+
+function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi") {
+  const gate = getGate(gateNumber);
+  const info = SPECTRUM_INFO[type];
+  const term = gate[type];
+  const base = getBaseUrl();
+
+  return {
+    version: "1.0" as const,
+    theme: { accent: "purple" as const },
+    ui: {
+      root: "page",
+      elements: {
+        page: {
+          type: "stack" as const,
+          props: { gap: "md" as const },
+          children: ["header", "term_item", "divider1", "blurb", "divider2", "btn_back"],
+        },
+        header: {
+          type: "text" as const,
+          props: { content: info.title, weight: "bold" as const, size: "lg" as const },
+        },
+        term_item: {
+          type: "item" as const,
+          props: {
+            title: `${term}`,
+            description: `Gate ${gateNumber} · ${gate.name}`,
+          },
+        },
+        divider1: { type: "separator" as const, props: {} },
+        blurb: {
+          type: "text" as const,
+          props: { content: info.blurb, size: "sm" as const },
+        },
+        divider2: { type: "separator" as const, props: {} },
+        btn_back: {
+          type: "button" as const,
+          props: { label: "← Back to Today's Transit", variant: "primary" as const },
+          on: { press: { action: "submit" as const, params: { target: `${base}/` } } },
+        },
+      },
+    },
+  };
+}
+
 // ── App + routes ──────────────────────────────────────────────────────────────
 
 const app = new Hono();
@@ -373,6 +438,20 @@ registerSnapHandler(
     return buildDetailPage(solar.gate, solar.line);
   },
   { path: "/detail" }
+);
+
+// Spectrum page (shadow / gift / siddhi description)
+registerSnapHandler(
+  app,
+  async (ctx) => {
+    const url = new URL((ctx as any).request.url);
+    const typeParam = url.searchParams.get("type");
+    const type: "shadow" | "gift" | "siddhi" =
+      typeParam === "gift" || typeParam === "siddhi" ? typeParam : "shadow";
+    const solar = getSolarPosition(new Date());
+    return buildSpectrumPage(solar.gate, type);
+  },
+  { path: "/spectrum" }
 );
 
 export default app;
