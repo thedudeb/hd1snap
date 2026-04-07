@@ -19,6 +19,8 @@ export interface Gate {
   lines: [GateLine, GateLine, GateLine, GateLine, GateLine, GateLine];
   reflection: string;
   circuit: string;
+  /** Canonical Richard Rudd quote from genekeys.com (when available). */
+  quote?: string;
 }
 
 export const GATES: Record<number, Gate> = {
@@ -1175,6 +1177,29 @@ export const GATES: Record<number, Gate> = {
     reflection: "You don't need to have it all figured out. The light is already gathering.",
   },
 };
+
+// ── Canonical overlay from genekeys.com ─────────────────────────────────────
+// Scraped via scripts/scrape-genekeys.mjs. We override the in-file
+// shadow/gift/siddhi (which were paraphrased) with Richard Rudd's official
+// triads, and attach his quote when available.
+import canonical from "./gene-keys-data.json" with { type: "json" };
+
+type CanonicalEntry = {
+  number: number;
+  shadow: string;
+  gift: string;
+  siddhi: string;
+  quote: string | null;
+};
+
+for (const entry of canonical as CanonicalEntry[]) {
+  const g = GATES[entry.number];
+  if (!g) continue;
+  g.shadow = entry.shadow;
+  g.gift = entry.gift;
+  g.siddhi = entry.siddhi;
+  if (entry.quote) g.quote = entry.quote;
+}
 
 export function getGate(gateNumber: number): Gate {
   return GATES[gateNumber];

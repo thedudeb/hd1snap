@@ -204,7 +204,9 @@ function buildMainPage(ctx?: any) {
               expand_text: {
                 type: "text" as const,
                 props: {
-                  content: buildSpectrumBlurb(expand!, solar.gate, gate, expandTerm as string),
+                  content: gate.quote
+                    ? `${buildSpectrumBlurb(expand!, solar.gate, gate, expandTerm as string)}\n\n${gate.quote}`
+                    : buildSpectrumBlurb(expand!, solar.gate, gate, expandTerm as string),
                   size: "sm" as const,
                 },
               },
