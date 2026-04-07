@@ -35,17 +35,17 @@ const CENTER_LABELS: Record<Center, string> = {
   root: "Root",
 };
 
-// Layout: 360 × 400 viewBox, compact + non-overlapping.
+// Layout: 400 × 400 square viewBox so it fits the 1:1 image slot exactly.
 const CENTER_GEOM: Record<Center, { shape: "triangle-up" | "triangle-down" | "square"; cx: number; cy: number; size: number }> = {
-  head:   { shape: "triangle-down", cx: 180, cy: 32,  size: 26 },
-  ajna:   { shape: "triangle-up",   cx: 180, cy: 82,  size: 26 },
-  throat: { shape: "square",        cx: 180, cy: 132, size: 24 },
-  g:      { shape: "square",        cx: 180, cy: 195, size: 22 }, // rotated 45° → diamond
-  heart:  { shape: "triangle-down", cx: 245, cy: 195, size: 22 },
-  spleen: { shape: "triangle-up",   cx: 70,  cy: 250, size: 22 },
-  sacral: { shape: "square",        cx: 180, cy: 258, size: 24 },
-  solar:  { shape: "triangle-up",   cx: 290, cy: 250, size: 22 },
-  root:   { shape: "square",        cx: 180, cy: 325, size: 24 },
+  head:   { shape: "triangle-down", cx: 200, cy: 38,  size: 22 },
+  ajna:   { shape: "triangle-up",   cx: 200, cy: 88,  size: 22 },
+  throat: { shape: "square",        cx: 200, cy: 138, size: 20 },
+  g:      { shape: "square",        cx: 200, cy: 195, size: 20 }, // rotated 45° → diamond
+  heart:  { shape: "triangle-down", cx: 260, cy: 195, size: 20 },
+  spleen: { shape: "triangle-up",   cx: 105, cy: 245, size: 20 },
+  sacral: { shape: "square",        cx: 200, cy: 252, size: 20 },
+  solar:  { shape: "triangle-up",   cx: 295, cy: 245, size: 20 },
+  root:   { shape: "square",        cx: 200, cy: 312, size: 20 },
 };
 
 function shapePath(c: { shape: string; cx: number; cy: number; size: number }) {
@@ -93,9 +93,9 @@ export function renderBodyGraph(activeGate: number, activeLine: number): string 
   }).join("\n");
 
   // Active gate label below the bodygraph
-  const gateLabel = `<text x="180" y="380" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#a78bfa">Gate ${activeGate} · Line ${activeLine}</text>`;
+  const gateLabel = `<text x="200" y="378" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#a78bfa">Gate ${activeGate} · Line ${activeLine}</text>`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 400" width="100%" height="100%">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
   <defs>
     <radialGradient id="activeGrad" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.9" />
@@ -106,7 +106,7 @@ export function renderBodyGraph(activeGate: number, activeLine: number): string 
       <stop offset="100%" stop-color="#0a0a1a" />
     </radialGradient>
   </defs>
-  <rect width="360" height="400" fill="url(#bgGrad)" />
+  <rect width="400" height="400" fill="url(#bgGrad)" />
   ${centers}
   ${gateLabel}
 </svg>`;
