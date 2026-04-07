@@ -14,6 +14,7 @@
   "dependencies": {
     "@farcaster/snap-hono": "^1.4.3",
     "@farcaster/snap-turso": "^1.0.1",
+    "@noble/curves": "^2.0.1",
     "hono": "^4.12.11"
   },
   "devDependencies": {
