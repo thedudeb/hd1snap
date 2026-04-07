@@ -134,7 +134,6 @@ function buildMainPage(ctx?: any) {
   return {
     version: "1.0" as const,
     theme: { accent: "purple" as const },
-    ...(firstLoad ? { effects: ["confetti" as const] } : {}),
     ui: {
       root: "page",
       elements: {
