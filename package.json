@@ -1,10 +1,10 @@
 {
   "name": "test-snap",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noEmit",
     "deploy": "vercel --prod"
   },
   "keywords": [],
@@ -14,8 +14,10 @@
   "dependencies": {
     "@farcaster/snap-hono": "^1.4.3",
     "@farcaster/snap-turso": "^1.0.1",
+    "@hono/node-server": "^1.19.12",
     "@noble/curves": "^2.0.1",
-    "hono": "^4.12.11"
+    "hono": "^4.12.11",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
