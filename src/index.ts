@@ -10,6 +10,62 @@ import {
 import { getGate, type Gate } from "./gates.js";
 import { getHexagramGlyph, getHexagramLineRows } from "./hexagrams.js";
 import { renderBodyGraph } from "./bodygraph.js";
+import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+// ── Static logo asset ───────────────────────────────────────────────────────
+// Read once at module init. Vercel's NFT will include the PNG in the bundle
+// because it sees the `new URL(..., import.meta.url)` pattern.
+const LOGO_URL_REF = new URL("../public/threshold-logo.png", import.meta.url);
+const LOGO_BYTES: Buffer | null = (() => {
+  try {
+    const p = fileURLToPath(LOGO_URL_REF);
+    if (existsSync(p)) return readFileSync(p);
+  } catch {}
+  return null;
+})();
+
+const APP_NAME = "Threshold";
+const APP_DESC = "Daily Human Design transit — the gate the Sun is crossing right now.";
+const PUBLIC_BASE =
+  (typeof process !== "undefined" && process.env?.SNAP_PUBLIC_BASE_URL?.replace(/\/$/, "")) ||
+  "https://hd1snap.vercel.app";
+const LOGO_PUBLIC_URL = `${PUBLIC_BASE}/threshold-logo.png`;
+
+function buildFallbackHtml(title: string, description: string): string {
+  const t = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const d = description.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${t}</title>
+<meta name="description" content="${d}">
+<meta property="og:title" content="${t}">
+<meta property="og:description" content="${d}">
+<meta property="og:image" content="${LOGO_PUBLIC_URL}">
+<meta property="og:image:alt" content="Threshold — daily Human Design transit">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Threshold">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${t}">
+<meta name="twitter:description" content="${d}">
+<meta name="twitter:image" content="${LOGO_PUBLIC_URL}">
+<style>
+body{margin:0;background:#050514;color:#c4b5fd;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
+img{max-width:340px;width:100%;border-radius:16px;box-shadow:0 0 80px rgba(167,139,250,0.25)}
+h1{margin:24px 0 8px;letter-spacing:6px;font-weight:400;font-size:22px}
+p{color:#7c7da8;font-size:14px;max-width:340px;line-height:1.5}
+</style>
+</head>
+<body>
+<img src="${LOGO_PUBLIC_URL}" alt="Threshold logo">
+<h1>THRESHOLD</h1>
+<p>${d}</p>
+</body>
+</html>`;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -473,6 +529,17 @@ function buildSpectrumPage(gateNumber: number, type: "shadow" | "gift" | "siddhi
 
 const app = new Hono();
 
+// Serve the Threshold logo PNG (used as the OG / embed image)
+app.get("/threshold-logo.png", (c) => {
+  if (!LOGO_BYTES) return c.notFound();
+  return new Response(new Uint8Array(LOGO_BYTES), {
+    headers: {
+      "content-type": "image/png",
+      "cache-control": "public, max-age=3600, s-maxage=86400, immutable",
+    },
+  });
+});
+
 // Serve the animated bodygraph SVG
 app.get("/bodygraph.svg", (c) => {
   const gate = Number(c.req.query("gate") ?? "1");
@@ -490,7 +557,11 @@ app.get("/bodygraph.svg", (c) => {
 });
 
 // Main transit page — GET and back-button POST both serve the same page
-registerSnapHandler(app, async (ctx) => buildMainPage(ctx), { path: "/" });
+registerSnapHandler(app, async (ctx) => buildMainPage(ctx), {
+  path: "/",
+  og: false,
+  fallbackHtml: buildFallbackHtml(APP_NAME, APP_DESC),
+});
 
 // Detail page
 registerSnapHandler(
@@ -499,7 +570,11 @@ registerSnapHandler(
     const solar = getSolarPosition(new Date());
     return buildDetailPage(solar.gate, solar.line, ctx);
   },
-  { path: "/detail" }
+  {
+    path: "/detail",
+    og: false,
+    fallbackHtml: buildFallbackHtml(`${APP_NAME} — Gate Detail`, APP_DESC),
+  },
 );
 
 // Spectrum page (shadow / gift / siddhi description)
@@ -513,7 +588,11 @@ registerSnapHandler(
     const solar = getSolarPosition(new Date());
     return buildSpectrumPage(solar.gate, type, ctx);
   },
-  { path: "/spectrum" }
+  {
+    path: "/spectrum",
+    og: false,
+    fallbackHtml: buildFallbackHtml(`${APP_NAME} — Gene Keys`, APP_DESC),
+  },
 );
 
 export default app;
