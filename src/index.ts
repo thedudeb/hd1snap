@@ -46,6 +46,22 @@ function isInitialGet(ctx?: any): boolean {
 
 // ── Page builders ─────────────────────────────────────────────────────────────
 
+function buildSpectrumBlurb(
+  type: "shadow" | "gift" | "siddhi",
+  gateNumber: number,
+  gate: Gate,
+  term: string,
+): string {
+  const lower = term.toLowerCase();
+  if (type === "shadow") {
+    return `In Gate ${gateNumber} (${gate.name}), the shadow shows up as ${lower} — the unconscious, reactive expression of "${gate.keyword}". This is the pattern of fear and contraction that runs the gate when you're on autopilot. Recognising it in yourself is the first step to transmuting it into the gift.`;
+  }
+  if (type === "gift") {
+    return `The gift of Gate ${gateNumber} (${gate.name}) is ${lower} — what becomes available when the shadow of "${gate.keyword}" is met with awareness. This is the gate in conscious service: your unique creative contribution flowing through this archetype.`;
+  }
+  return `The siddhi of Gate ${gateNumber} (${gate.name}) is ${lower} — the fully realised, transcendent frequency of "${gate.keyword}". Beyond personality and effort, this is the highest expression of the gate, glimpsed in moments of grace and union with the whole.`;
+}
+
 const SPECTRUM_INFO = {
   shadow: {
     title: "🌑 The Shadow",
@@ -181,13 +197,16 @@ function buildMainPage(ctx?: any) {
               expand_panel: {
                 type: "item" as const,
                 props: {
-                  title: `${expandInfo!.title} — ${expandTerm}`,
-                  description: `Gate ${solar.gate} · ${gate.name}`,
+                  title: `${expandInfo!.title} of Gate ${solar.gate} — ${expandTerm}`,
+                  description: `${gate.name} · ${gate.keyword}`,
                 },
               },
               expand_text: {
                 type: "text" as const,
-                props: { content: expandInfo!.blurb, size: "sm" as const },
+                props: {
+                  content: buildSpectrumBlurb(expand!, solar.gate, gate, expandTerm as string),
+                  size: "sm" as const,
+                },
               },
               btn_close_expand: {
                 type: "button" as const,
