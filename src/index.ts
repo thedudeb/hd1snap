@@ -35,6 +35,13 @@ const LOGO_PUBLIC_URL = `${PUBLIC_BASE}/threshold-logo.png`;
 function buildFallbackHtml(title: string, description: string): string {
   const t = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
   const d = description.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  // Compute today's transit for the landing page preview
+  const now = new Date();
+  const solar = getSolarPosition(now);
+  const moon = getMoonPosition(now);
+  const gate = getGate(solar.gate);
+  const bodygraphUrl = `${PUBLIC_BASE}/bodygraph.svg?gate=${solar.gate}&line=${solar.line}`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,16 +60,122 @@ function buildFallbackHtml(title: string, description: string): string {
 <meta name="twitter:description" content="${d}">
 <meta name="twitter:image" content="${LOGO_PUBLIC_URL}">
 <style>
-body{margin:0;background:#050514;color:#c4b5fd;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
-img{max-width:340px;width:100%;border-radius:16px;box-shadow:0 0 80px rgba(167,139,250,0.25)}
-h1{margin:24px 0 8px;letter-spacing:6px;font-weight:400;font-size:22px}
-p{color:#7c7da8;font-size:14px;max-width:340px;line-height:1.5}
+  *{margin:0;padding:0;box-sizing:border-box}
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Raleway:wght@300;400;500&display=swap');
+  :root{--purple:#a78bfa;--purple-light:#c4b5fd;--purple-dark:#6d28d9;--bg:#050514;--bg2:#0f0d2a;--text:#c4b5fd;--muted:#5b5878}
+  body{background:var(--bg);color:var(--text);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh;overflow-x:hidden}
+
+  /* starfield */
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 50% 30%,#1e1b4b 0%,#0b0820 50%,#050514 100%)}
+  .stars::before,.stars::after{content:'';position:absolute;inset:0;background-image:radial-gradient(1px 1px at 10% 20%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 30% 60%,#fff 0%,transparent 100%),radial-gradient(1.5px 1.5px at 50% 10%,#c4b5fd 0%,transparent 100%),radial-gradient(1px 1px at 70% 40%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 85% 75%,#fff 0%,transparent 100%),radial-gradient(1.5px 1.5px at 20% 85%,#c4b5fd 0%,transparent 100%),radial-gradient(1px 1px at 65% 90%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 40% 45%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 90% 15%,#c4b5fd 0%,transparent 100%),radial-gradient(1px 1px at 15% 50%,#fff 0%,transparent 100%);animation:twinkle 4s ease-in-out infinite alternate}
+  .stars::after{background-image:radial-gradient(1px 1px at 25% 30%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 55% 70%,#fff 0%,transparent 100%),radial-gradient(1.5px 1.5px at 75% 20%,#c4b5fd 0%,transparent 100%),radial-gradient(1px 1px at 45% 80%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 80% 55%,#fff 0%,transparent 100%),radial-gradient(1px 1px at 5% 65%,#c4b5fd 0%,transparent 100%),radial-gradient(1px 1px at 95% 40%,#fff 0%,transparent 100%);animation-delay:2s}
+  @keyframes twinkle{0%{opacity:.4}100%{opacity:1}}
+
+  /* layout */
+  .wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:60px 24px 80px}
+
+  /* hero */
+  .logo{display:block;width:140px;height:140px;object-fit:cover;border-radius:50%;margin:0 auto 32px;box-shadow:0 0 60px rgba(167,139,250,0.4),0 0 120px rgba(109,40,217,0.2)}
+  h1{font-size:clamp(36px,8vw,72px);font-weight:300;letter-spacing:14px;text-transform:uppercase;margin-bottom:12px;background:linear-gradient(135deg,#e9d5ff,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .tagline{font-size:18px;font-weight:300;color:var(--muted);letter-spacing:2px;font-style:italic;margin-bottom:48px}
+
+  /* today card */
+  .today{background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:20px;padding:32px;margin-bottom:48px;display:flex;gap:32px;align-items:center;flex-wrap:wrap;justify-content:center}
+  .bodygraph{width:180px;height:180px;flex-shrink:0;border-radius:12px;overflow:hidden;box-shadow:0 0 40px rgba(109,40,217,0.3)}
+  .bodygraph img{width:100%;height:100%;object-fit:cover}
+  .transit-info{text-align:left;flex:1;min-width:220px}
+  .transit-label{font-family:'Raleway',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .transit-gate{font-size:clamp(22px,4vw,32px);font-weight:600;color:var(--purple-light);margin-bottom:4px}
+  .transit-sub{font-size:16px;font-weight:300;color:var(--muted);margin-bottom:20px;font-style:italic}
+  .triad{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:'Raleway',sans-serif;font-size:11px;padding:4px 12px;border-radius:999px;letter-spacing:1px}
+  .pill-shadow{border:1px solid rgba(167,139,250,0.3);color:var(--muted)}
+  .pill-gift{background:rgba(167,139,250,0.2);border:1px solid var(--purple);color:var(--purple-light)}
+  .pill-siddhi{border:1px solid rgba(167,139,250,0.3);color:var(--muted)}
+  .moon-row{margin-top:16px;font-family:'Raleway',sans-serif;font-size:12px;color:var(--muted);letter-spacing:1px}
+
+  /* features */
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:48px}
+  .feature{background:rgba(167,139,250,0.04);border:1px solid rgba(167,139,250,0.1);border-radius:14px;padding:24px}
+  .feature-icon{font-size:28px;margin-bottom:12px}
+  .feature-title{font-size:16px;font-weight:600;color:var(--purple-light);margin-bottom:6px}
+  .feature-desc{font-family:'Raleway',sans-serif;font-size:13px;color:var(--muted);line-height:1.6}
+
+  /* CTA */
+  .cta-wrap{text-align:center}
+  .cta{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;text-decoration:none;padding:16px 36px;border-radius:999px;font-family:'Raleway',sans-serif;font-size:15px;font-weight:500;letter-spacing:2px;text-transform:uppercase;box-shadow:0 0 40px rgba(109,40,217,0.4);transition:all .2s}
+  .cta:hover{box-shadow:0 0 60px rgba(167,139,250,0.5);transform:translateY(-2px)}
+  .cta-sub{margin-top:16px;font-family:'Raleway',sans-serif;font-size:12px;color:var(--muted);letter-spacing:1px}
+
+  /* divider */
+  .divider{border:none;border-top:1px solid rgba(167,139,250,0.1);margin:48px 0}
+
+  @media(max-width:480px){.today{padding:20px}.transit-info{text-align:center}.triad{justify-content:center}.moon-row{text-align:center}}
 </style>
 </head>
 <body>
-<img src="${LOGO_PUBLIC_URL}" alt="Threshold logo">
-<h1>THRESHOLD</h1>
-<p>${d}</p>
+<div class="stars"></div>
+<div class="wrap">
+
+  <!-- Hero -->
+  <img class="logo" src="${LOGO_PUBLIC_URL}" alt="Threshold">
+  <h1>Threshold</h1>
+  <p class="tagline">know the gate you're standing in</p>
+
+  <!-- Today's transit live preview -->
+  <div class="today">
+    <div class="bodygraph">
+      <img src="${bodygraphUrl}" alt="Today's BodyGraph">
+    </div>
+    <div class="transit-info">
+      <div class="transit-label">Today's Sun Transit</div>
+      <div class="transit-gate">Gate ${solar.gate} · Line ${solar.line}</div>
+      <div class="transit-sub">${gate.name} — ${gate.keyword}</div>
+      <div class="triad">
+        <span class="pill pill-shadow">🌑 ${gate.shadow}</span>
+        <span class="pill pill-gift">🎁 ${gate.gift}</span>
+        <span class="pill pill-siddhi">✨ ${gate.siddhi}</span>
+      </div>
+      <div class="moon-row">${moon.emoji} Moon in Gate ${moon.gate} · ${moon.phaseName}</div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">☀️</div>
+      <div class="feature-title">Daily Sun Gate</div>
+      <div class="feature-desc">The exact gate and line the Sun is crossing today, with its shadow, gift, and siddhi from Richard Rudd's Gene Keys.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🌙</div>
+      <div class="feature-title">Moon Transits</div>
+      <div class="feature-desc">The Moon shifts gates every ~10 hours. See what's moving and how long until the next threshold crossing.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⏳</div>
+      <div class="feature-title">Live Countdowns</div>
+      <div class="feature-desc">Exact time remaining until the Sun and Moon enter their next gate and line — down to the minute.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔮</div>
+      <div class="feature-title">Animated BodyGraph</div>
+      <div class="feature-desc">A stylized HD bodygraph with the active center glowing and pulsing — beautiful enough to screenshot and share.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CTA -->
+  <div class="cta-wrap">
+    <a class="cta" href="https://farcaster.xyz">
+      <svg width="18" height="16" viewBox="0 0 520 457" fill="currentColor"><path d="M519.801 0V61.6809H458.172V123.31H477.054V123.331H519.801V456.795H416.57L416.507 456.49L363.832 207.03C358.81 183.251 345.667 161.736 326.827 146.434C307.988 131.133 284.255 122.71 260.006 122.71H259.8C235.551 122.71 211.818 131.133 192.979 146.434C174.139 161.736 160.996 183.259 155.974 207.03L103.239 456.795H0V123.323H42.7471V123.31H61.6262V61.6809H0V0H519.801Z"/></svg>
+      Open in Farcaster
+    </a>
+    <p class="cta-sub">Threshold lives as an interactive snap inside the Farcaster app</p>
+  </div>
+
+</div>
 </body>
 </html>`;
 }
